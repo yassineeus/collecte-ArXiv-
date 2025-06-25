@@ -1,0 +1,40 @@
+name: Mise à jour quotidienne des articles
+
+on:
+  schedule:
+    # Exécution tous les jours à 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Permet l'exécution manuelle
+
+jobs:
+  update-papers:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout du repository
+      uses: actions/checkout@v3
+    
+    - name: Configuration Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Installation des dépendances
+      run: |
+        pip install arxiv jinja2 requests
+    
+    - name: Collecte des nouveaux articles
+      run: |
+        python scripts/arxiv_collector.py
+    
+    - name: Génération du tableau HTML
+      run: |
+        python scripts/update_table.py
+    
+    - name: Commit et push des changements
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git diff --staged --quiet || git commit -m "🤖 Mise à jour automatique - $(date '+%Y-%m-%d %H:%M')"
+        git push
